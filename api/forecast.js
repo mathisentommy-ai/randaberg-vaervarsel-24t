@@ -1,7 +1,7 @@
 
 export default async function handler(req, res) {
-  const lat = 59.0;
-  const lon = 5.6;
+  const lat = 58.9834382;
+  const lon = 5.5719462;
   const email = process.env.MET_CONTACT_EMAIL;
 
   if (!email) {
