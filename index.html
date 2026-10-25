@@ -1,0 +1,17 @@
+<!doctype html><html lang="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Randaberg – neste 24 timer</title><style>
+body{font-family:system-ui,Arial,sans-serif;background:#f3f6fa;color:#182536;margin:0;padding:24px}main{max-width:1050px;margin:auto}h1{margin-bottom:4px}.muted{color:#596778}table{border-collapse:collapse;width:100%;background:white}th,td{padding:10px;border-bottom:1px solid #e4e9f0;text-align:left}th{background:#e8eef5;position:sticky;top:0}tr.yellow{background:#fff3c7}tr.red{background:#ffd9d9}.wrap{overflow-x:auto;border-radius:12px}button{padding:9px 15px;border:0;border-radius:8px;background:#184a7b;color:white;cursor:pointer}.small{font-size:13px}
+</style></head><body><main><h1>Randaberg – værvarsel neste 24 timer</h1><p class="muted">Timeprognose fra MET Norway (Yr). Modellvarsel, ikke observasjoner.</p><button onclick="load()">Oppdater</button> <span id="status" class="small"></span><div class="wrap"><table><thead><tr><th>Tid</th><th>Vind m/s</th><th>Kast m/s</th><th>Regn mm/t</th><th>Temp °C</th><th>Varsel og forklaring</th></tr></thead><tbody id="rows"></tbody></table></div><p class="muted small" id="meta"></p></main><script>
+const fmt=v=>v==null?'–':Number(v).toLocaleString('nb-NO',{maximumFractionDigits:1});
+const time=t=>new Date(t).toLocaleString('nb-NO',{timeZone:'Europe/Oslo',weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+function assess(h){let reasons=[],level=0;
+// Foreløpige, lokale terskler – ikke offisielle farevarsler.
+if(h.wind!=null&&h.wind>=17.2){level=Math.max(level,2);reasons.push('Sterk vind (minst sterk kuling)')}
+else if(h.wind!=null&&h.wind>=10.8){level=Math.max(level,1);reasons.push('Kuling')}
+if(h.gust!=null&&h.gust>=25){level=Math.max(level,2);reasons.push('Svært kraftige vindkast')}
+else if(h.gust!=null&&h.gust>=17.2){level=Math.max(level,1);reasons.push('Kraftige vindkast')}
+if(h.precipitation!=null&&h.precipitation>=10){level=Math.max(level,2);reasons.push('Svært kraftig nedbør per time')}
+else if(h.precipitation!=null&&h.precipitation>=4){level=Math.max(level,1);reasons.push('Kraftig nedbør per time')}
+return {level,text:reasons.join('; ')||'Ingen lokale terskler overskredet'};}
+async function load(){document.getElementById('status').textContent='Henter…';try{const r=await fetch('/api/forecast');const d=await r.json();if(!r.ok)throw Error(d.error||'Ukjent feil');const rows=document.getElementById('rows');rows.replaceChildren();for(const h of d.hours){const a=assess(h),tr=document.createElement('tr');tr.className=['','yellow','red'][a.level];const values=[time(h.time),fmt(h.wind),fmt(h.gust),fmt(h.precipitation),fmt(h.temperature),(['Grønn','Gul','Rød'][a.level]+': '+a.text)];for(const v of values){const td=document.createElement('td');td.textContent=v;tr.append(td)}rows.append(tr)}document.getElementById('meta').textContent=`Kilde: ${d.source}. Modell oppdatert: ${time(d.updated)}. Gul/rød er egne foreløpige terskler, ikke METs offisielle farevarsler.`;document.getElementById('status').textContent=`${d.hours.length} timer hentet`;}catch(e){document.getElementById('status').textContent='Feil: '+e.message}}
+load();setInterval(load,600000);
+</script></body></html>
